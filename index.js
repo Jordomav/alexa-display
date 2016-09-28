@@ -1,56 +1,102 @@
+require('dotenv').config();
 var alexa = require('alexa-app');
 var app = new alexa.app();
+var getUrl = require('request');
+var ngrok = process.env.ngrok;
+
 
 /**
- * LaunchRequest.
+ * Launch Intent
  */
 app.launch(function(request,response) {
-	response.say('Hey there fancy pants!');
-	response.card("Hey there fancy pants!","This is an example card");
+	response.say('What would you like to see?');
+	response.shouldEndSession(false);
 });
 
 
 /**
- * IntentRequest.
+ * Google Intent
  */
-app.intent('number',
+app.intent('Google',
   {
-    'slots':{'number':'NUMBER'},
-    'utterances':[ 'say the number {1-100|number}' ]
+    'slots':{'GoogleDisplay':'GOOGLE_DISPLAY'},
+    'utterances':[ 'Show me a google search for {GoogleDisplay}' ]
   },
-  function(request,response) {
-    var number = request.slot('number');
-    response.say('You asked for the number '+number);
-    response.shouldEndSession(true);
-    response.send();
-  }
-);
+  function(request, response) {
+	  var display = request.slot('GoogleDisplay');
+	  getUrl(ngrok + '/google?display=' + display, function (error, Response, body) {
+			if (!error) {
+				response.say('Here is a google search for ' + display);
+				response.shouldEndSession(true);
+				response.send();
+			} else {
+				response.say('I encountered a problem');
+				response.shouldEndSession(true);
+				response.send();
+			}
+	  });
+	  return false;
+  });
+
+/**
+ * Wiki Intent
+ */
+app.intent('Wiki',
+	{
+		'slots':{'WikiDisplay':'WIKI_DISPLAY'},
+		'utterances':[ 'let me see {WikiDisplay}' ]
+	},
+	function(request, response) {
+		var display = request.slot('WikiDisplay');
+		getUrl(ngrok + '/wiki?display=' + display, function (error, Response, body) {
+			if (!error) {
+				response.say('Here is a Wikepedia search for ' + display);
+				response.shouldEndSession(true);
+				response.send();
+			} else {
+				response.say('I encountered a problem');
+				response.shouldEndSession(true);
+				response.send();
+			}
+		});
+		return false;
+	});
 
 
 /**
- * IntentRequest w/ asynchronous response.
+ * End Session
  */
-app.intent('checkStatus', 
+app.intent('Image',
 	{
-    	'utterances':[ 
-    		'status check', 'what is the status', 'tell me the status'
-    	]
-  	},
-	function(request,response) {
-		setTimeout(function() {		// simulate an async request
+		'slots':{'ImageDisplay':'IMAGE_DISPLAY'},
+		'utterances':[ 'let me see {ImageDisplay}' ]
+	},
+	function(request, response) {
+		var display = request.slot('ImageDisplay');
+		getUrl(ngrok + '/image?display=' + display, function (error, Response, body) {
+			if (!error) {
+				response.say('Here is a Image of ' + display);
+				response.shouldEndSession(true);
+				response.send();
+			} else {
+				response.say('I encountered a problem');
+				response.shouldEndSession(true);
+				response.send();
+			}
+		});
+		return false;
+	});
 
-	        // This is async and will run after a brief delay
-	        response.say('Status is operational, mam!');
-	    
-	        // Must call send to end the original request
-	        response.send();
-		
-		}, 250);
-
-	    // Return false immediately so alexa-app doesn't send the response
-	    return false;
-	}
-);
+/**
+ * End Session Intent
+ */
+app.intent('EndIntent',
+    function (request, response) {
+        response.say('Goodbye');
+        response.shouldEndSession(true);
+        response.send();
+        return false;
+    });
 
 
 /**
